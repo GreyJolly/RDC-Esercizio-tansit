@@ -55,8 +55,21 @@ sem_t
 void *train(void *args)
 {
 	sem_wait(&mutex_waiting);
+	printf("Train waiting!\nNumber of waiting trains: %d\nTrains currently in station: [ ", waiting);
 	waiting++;
 	sem_post(&mutex_waiting);
+
+	sem_wait(&mutex_occupyingIDs);
+	for (int i = 0; i < ((thread_args *)args)->number_of_tracks; i++)
+	{
+		if (occupyingIDs[i] != -1)
+			printf("%d ", occupyingIDs[i]);
+	}
+	sem_post(&mutex_occupyingIDs);
+
+	sem_wait(&mutex_crossed);
+	printf("]\nNumber of trains that have crossed:%d\n", crossed);
+	sem_post(&mutex_crossed);
 
 	// Wait to arrive at station:
 	sem_wait(&semaphore);
@@ -120,10 +133,10 @@ void *train(void *args)
 	printf("]\nNumber of trains that have crossed:%d\n", crossed);
 	sem_post(&mutex_crossed);
 	// End of printing and various handling routine
-
 	fflush(stdout);
 
 	free(args);
+	return NULL;
 }
 
 int main(int argc, char *argv[])
@@ -179,4 +192,17 @@ int main(int argc, char *argv[])
 
 		current_id++;
 	}
+
+	ret = sem_destroy(&semaphore);
+	if (ret)
+		handle_error("sem_destroy");
+	sem_destroy(&mutex_crossed);
+	if (ret)
+		handle_error("sem_destroy");
+	sem_destroy(&mutex_occupyingIDs);
+	if (ret)
+		handle_error("sem_destroy");
+	sem_destroy(&mutex_waiting);
+	if (ret)
+		handle_error("sem_destroy");
 }
